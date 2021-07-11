@@ -2,14 +2,11 @@ from scipy.stats import rv_continuous
 import numpy as np
 
 class marchenko_pastur(rv_continuous):
+    
     def _pdf(self, x, Q, var):
         lambda_min = var * (1 + 1/Q - 2 * np.sqrt(1/Q))
         lambda_max = var * (1 + 1/Q + 2 * np.sqrt(1/Q))
-        if x > lambda_max:
-            return 0
-        if x < lambda_min:
-            return 0
-        return Q/(2*np.pi*var) * np.sqrt((lambda_max-x)*(x-lambda_min)) / x
+        return np.where((x > lambda_max) | (x < lambda_min), 0, Q/(2*np.pi*var) * np.sqrt((lambda_max-x)*(x-lambda_min)) / x)
 
     def _cdf(self, x, Q, var):
         lambda_min = var * (1 + 1/Q - 2 * np.sqrt(1/Q))
