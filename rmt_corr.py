@@ -1,4 +1,3 @@
-from time import clock_settime
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -12,6 +11,7 @@ data = yf.download(
     period="5d",
     interval="1m"
     )
+stocks = data.columns
 data.dropna()
 closing_data = data['Close']
 closing_diff = closing_data.pct_change().dropna()
@@ -39,3 +39,32 @@ projection_random = np.matmul(np.matmul(random_band.T, np.linalg.inv(np.matmul(r
 random_component = np.matmul(projection_random, correlation)
 market_component = np.add(correlation, -random_component) 
 cleaned_correlation = np.add(market_component, np.eye(correlation.shape[0]) * np.trace(random_component)/correlation.shape[0])
+
+rewards = [(closing_data[col].dropna()[-1] - closing_data[col].dropna()[0]) * 100 / closing_data[col].dropna()[0] for col in closing_data]
+rewards = np.asarray(rewards)
+
+portfolio = np.matmul(np.linalg.inv(correlation), rewards)
+portfolio = portfolio/np.sum(portfolio)
+portfolio_c = np.matmul(np.linalg.inv(cleaned_correlation), rewards)
+portfolio_c = portfolio_c/np.sum(portfolio_c)
+stocks = stocks[np.argsort(portfolio_c)]
+portfolio_c = np.sort(portfolio_c)
+
+expected_reward = np.dot(rewards, portfolio)
+risk = np.matmul(portfolio, np.matmul(correlation, portfolio.T))
+
+expected_reward_c = np.dot(rewards, portfolio_c)
+risk_c = np.matmul(portfolio_c, np.matmul(cleaned_correlation, portfolio_c.T))
+
+print("Portfolio")
+print("Expected return: ", expected_reward)
+print("Risk: ", risk)
+print("Cleaned portfolio")
+print("Expected return: ", expected_reward_c)
+print("Risk: ", risk_c)
+print("Down:")
+print(stocks[:5])
+print(portfolio_c[:5])
+print("Up:")
+print(stocks[-5:])
+print(portfolio_c[-5:])
